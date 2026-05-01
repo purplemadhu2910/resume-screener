@@ -39,7 +39,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**
+Open **[http://localhost:5173](https://resume-screener-self.vercel.app/)**
 
 ## API
 
