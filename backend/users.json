@@ -1,0 +1,273 @@
+{
+  "appleorange2910@gmail.com": {
+    "id": "1e8736a7-f496-4fc8-a8e1-2f200ace63aa",
+    "name": "apple",
+    "password": "1aa9d1e4ba399fb82f380210e3b60dcec28c6aa00a6e3a8bd7bf0c6ab31b455f",
+    "history": []
+  },
+  "watermelon@gmail.com": {
+    "id": "8184a436-ecf4-4cbc-a593-e61d457b0cb9",
+    "name": "apple",
+    "password": "31a2d5282683edb3a22c565f199aa96fb9ffb3107af35aad92ee1cd567cfc25d",
+    "history": [
+      {
+        "id": "0e9cb7b7-1887-4c62-86ff-109e5a3f6d4f",
+        "filename": "madhu_final_resume.pdf",
+        "date": "2026-04-30 17:03",
+        "score": 11.7,
+        "score_breakdown": {
+          "skills": 0.0,
+          "experience": 40.0,
+          "education": 0.0
+        },
+        "matched_skills": [
+          "aws",
+          "machine learning",
+          "nlp",
+          "numpy",
+          "pandas",
+          "python",
+          "scikit-learn",
+          "sql"
+        ],
+        "missing_skills": [
+          "data analysis",
+          "deep learning",
+          "feature engineering",
+          "gcp",
+          "model deployment",
+          "pytorch",
+          "tensorflow"
+        ],
+        "suggestions": [
+          "Your resume needs significant tailoring \u2014 rewrite your summary to mirror the job description.",
+          "Use the exact keywords from the JD in your bullet points.",
+          "Consider restructuring your resume to highlight the most relevant experience first.",
+          "Add these missing skills to your resume: data analysis, deep learning, feature engineering, gcp, model deployment, pytorch."
+        ],
+        "keyword_density": [
+          {
+            "skill": "python",
+            "count": 5
+          },
+          {
+            "skill": "nlp",
+            "count": 2
+          },
+          {
+            "skill": "pandas",
+            "count": 2
+          },
+          {
+            "skill": "numpy",
+            "count": 2
+          },
+          {
+            "skill": "sql",
+            "count": 2
+          },
+          {
+            "skill": "machine learning",
+            "count": 1
+          },
+          {
+            "skill": "scikit-learn",
+            "count": 1
+          },
+          {
+            "skill": "aws",
+            "count": 1
+          },
+          {
+            "skill": "deep learning",
+            "count": 0
+          },
+          {
+            "skill": "tensorflow",
+            "count": 0
+          },
+          {
+            "skill": "pytorch",
+            "count": 0
+          },
+          {
+            "skill": "data analysis",
+            "count": 0
+          },
+          {
+            "skill": "feature engineering",
+            "count": 0
+          },
+          {
+            "skill": "model deployment",
+            "count": 0
+          },
+          {
+            "skill": "gcp",
+            "count": 0
+          }
+        ],
+        "cover_letter": "Dear Hiring Manager,\n\nI am writing to express my strong interest in Data Scientist skilled in Python. With hands-on experience in aws, machine learning, nlp, numpy, pandas, I am confident in my ability to contribute meaningfully to your team from day one.\n\nThroughout my career I have developed a solid foundation in the core competencies your role demands. I am particularly drawn to this opportunity because it aligns closely with my background and my desire to grow further in areas such as data analysis, deep learning, feature engineering.\n\nI thrive in collaborative environments, take ownership of my work, and consistently deliver results. I would welcome the chance to discuss how my experience can benefit your team.\n\nThank you for your time and consideration.\n\nSincerely,\napple",
+        "learning_resources": [
+          {
+            "skill": "data analysis",
+            "courses": [
+              {
+                "title": "Google Data Analytics Certificate",
+                "url": "https://www.coursera.org/professional-certificates/google-data-analytics",
+                "platform": "Coursera",
+                "level": "Beginner"
+              }
+            ]
+          },
+          {
+            "skill": "deep learning",
+            "courses": [
+              {
+                "title": "Deep Learning Specialization",
+                "url": "https://www.coursera.org/specializations/deep-learning",
+                "platform": "Coursera",
+                "level": "Intermediate"
+              },
+              {
+                "title": "fast.ai Practical Deep Learning",
+                "url": "https://course.fast.ai",
+                "platform": "fast.ai",
+                "level": "Intermediate"
+              }
+            ]
+          },
+          {
+            "skill": "feature engineering",
+            "courses": [
+              {
+                "title": "Feature Engineering for ML \u2013 Kaggle",
+                "url": "https://www.kaggle.com/learn/feature-engineering",
+                "platform": "Kaggle",
+                "level": "Intermediate"
+              }
+            ]
+          },
+          {
+            "skill": "gcp",
+            "courses": [
+              {
+                "title": "Google Cloud Skills Boost",
+                "url": "https://cloudskillsboost.google",
+                "platform": "Google",
+                "level": "Beginner"
+              }
+            ]
+          },
+          {
+            "skill": "model deployment",
+            "courses": [
+              {
+                "title": "Deploying ML Models \u2013 Coursera",
+                "url": "https://www.coursera.org/learn/deploying-machine-learning-models",
+                "platform": "Coursera",
+                "level": "Intermediate"
+              }
+            ]
+          },
+          {
+            "skill": "pytorch",
+            "courses": [
+              {
+                "title": "PyTorch Official Tutorials",
+                "url": "https://pytorch.org/tutorials/",
+                "platform": "Official Docs",
+                "level": "Intermediate"
+              },
+              {
+                "title": "Deep Learning with PyTorch",
+                "url": "https://www.learnpytorch.io",
+                "platform": "learnpytorch.io",
+                "level": "Beginner"
+              }
+            ]
+          },
+          {
+            "skill": "tensorflow",
+            "courses": [
+              {
+                "title": "TensorFlow Developer Certificate",
+                "url": "https://www.coursera.org/professional-certificates/tensorflow-in-practice",
+                "platform": "Coursera",
+                "level": "Intermediate"
+              }
+            ]
+          }
+        ],
+        "project_recommendations": [
+          {
+            "title": "Handwritten Digit Recognizer",
+            "description": "Train a CNN on MNIST and deploy it as a web app where users draw digits.",
+            "difficulty": "Beginner",
+            "tech": [
+              "PyTorch",
+              "Flask",
+              "HTML Canvas"
+            ],
+            "skill": "deep learning"
+          },
+          {
+            "title": "Image Classifier Web App",
+            "description": "Fine-tune a ResNet model on a custom dataset and serve predictions via API.",
+            "difficulty": "Intermediate",
+            "tech": [
+              "PyTorch",
+              "FastAPI",
+              "React"
+            ],
+            "skill": "deep learning"
+          },
+          {
+            "title": "Titanic Survival Prediction",
+            "description": "Engineer features from the Titanic dataset and compare multiple classifiers.",
+            "difficulty": "Beginner",
+            "tech": [
+              "Python",
+              "pandas",
+              "scikit-learn"
+            ],
+            "skill": "feature engineering"
+          },
+          {
+            "title": "ML Model as REST API",
+            "description": "Train a model locally, serialize it with joblib, and serve predictions via a Flask/FastAPI endpoint.",
+            "difficulty": "Intermediate",
+            "tech": [
+              "Python",
+              "Flask",
+              "joblib",
+              "Docker"
+            ],
+            "skill": "model deployment"
+          },
+          {
+            "title": "Neural Style Transfer",
+            "description": "Apply the artistic style of one image to another using a pre-trained VGG network.",
+            "difficulty": "Intermediate",
+            "tech": [
+              "PyTorch",
+              "torchvision",
+              "PIL"
+            ],
+            "skill": "pytorch"
+          },
+          {
+            "title": "Text Generation Model",
+            "description": "Train a character-level RNN to generate text in the style of a given author.",
+            "difficulty": "Intermediate",
+            "tech": [
+              "PyTorch",
+              "Python"
+            ],
+            "skill": "pytorch"
+          }
+        ]
+      }
+    ]
+  }
+}
