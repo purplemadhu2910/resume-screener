@@ -37,7 +37,7 @@ export default function AuthPage() {
         : { name: form.name, email: form.email, password: form.password }
 
       const { data } = await axios.post(`${API}${endpoint}`, payload)
-      login({ token: data.token, name: data.name, email: data.email })
+      login({ token: data.token, refresh_token: data.refresh_token, name: data.name, email: data.email })
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong. Try again.')
     } finally {

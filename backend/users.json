@@ -269,5 +269,34 @@
         ]
       }
     ]
+  },
+  "hiiamwatermelon@gmail.com": {
+    "id": "bc2d18de-09b6-4ed1-86ae-f3050d6a49be",
+    "name": "watermelon",
+    "password": "0ccfde18bd913f8400d3b93568cc622f810c7e78f0cf8a4f8e13487f41def4fb",
+    "history": [
+      {
+        "id": "7341bf2c-969b-47bc-a48f-a8f0f0d426ac",
+        "filename": "madhushree-mandokar-resume.pdf",
+        "date": "2026-06-21 13:47",
+        "score": 12.0,
+        "score_breakdown": {
+          "skills": 0.0,
+          "experience": 0.0,
+          "education": 0.0
+        },
+        "matched_skills": [],
+        "missing_skills": [],
+        "suggestions": [
+          "Your resume needs significant tailoring \u2014 rewrite your summary to mirror the job description.",
+          "Use the exact keywords from the JD in your bullet points.",
+          "Consider restructuring your resume to highlight the most relevant experience first."
+        ],
+        "keyword_density": [],
+        "cover_letter": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the advertised position. With hands-on experience in relevant skills, I am confident in my ability to contribute meaningfully to your team from day one.\n\nThroughout my career I have developed a solid foundation in the core competencies your role demands. I am particularly drawn to this opportunity because it aligns closely with my background and my desire to grow further in areas such as new technologies.\n\nI thrive in collaborative environments, take ownership of my work, and consistently deliver results. I would welcome the chance to discuss how my experience can benefit your team.\n\nThank you for your time and consideration.\n\nSincerely,\nwatermelon",
+        "learning_resources": [],
+        "project_recommendations": []
+      }
+    ]
   }
 }

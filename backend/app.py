@@ -1,39 +1,70 @@
-import re, json, hashlib, uuid
-from datetime import datetime
+import re, json, uuid, sqlite3
+from datetime import datetime, timedelta
 from pathlib import Path
 import fitz
 import docx
 import nltk
+import bcrypt
+from dotenv import load_dotenv
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import (
-    JWTManager, create_access_token, jwt_required, get_jwt_identity
+    JWTManager, create_access_token, create_refresh_token,
+    jwt_required, get_jwt_identity
 )
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+load_dotenv()
 
 nltk.download("stopwords", quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
-app.config["JWT_SECRET_KEY"] = "resume-screener-secret-2024"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_DAYS", 7)))
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 CORS(app)
 jwt = JWTManager(app)
 
-# ── Simple file-based user store ──────────────────────────────────────────────
-USERS_FILE = Path(__file__).parent / "users.json"
+# ── SQLite database ───────────────────────────────────────────────────────────
+DB_PATH = Path(__file__).parent / "resume_screener.db"
 
-def load_users():
-    if USERS_FILE.exists():
-        return json.loads(USERS_FILE.read_text())
-    return {}
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-def save_users(users):
-    USERS_FILE.write_text(json.dumps(users, indent=2))
+def init_db():
+    with get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS history (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                filename TEXT,
+                date TEXT,
+                data TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+        conn.commit()
 
-def hash_pw(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+init_db()
+
+def hash_pw(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def check_pw(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
 # ── Skills DB ─────────────────────────────────────────────────────────────────
 SKILLS_DB = [
@@ -550,15 +581,21 @@ def register():
     if len(password) < 6:
         return jsonify({"error": "Password must be at least 6 characters"}), 400
 
-    users = load_users()
-    if email in users:
+    user_id = str(uuid.uuid4())
+    identity = json.dumps({"email": email, "name": name})
+    try:
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)",
+                (user_id, name, email, hash_pw(password))
+            )
+            conn.commit()
+    except sqlite3.IntegrityError:
         return jsonify({"error": "Email already registered"}), 409
 
-    users[email] = {"id": str(uuid.uuid4()), "name": name, "password": hash_pw(password), "history": []}
-    save_users(users)
-
-    token = create_access_token(identity=json.dumps({"email": email, "name": name}))
-    return jsonify({"token": token, "name": name, "email": email}), 201
+    token = create_access_token(identity=identity)
+    refresh = create_refresh_token(identity=identity)
+    return jsonify({"token": token, "refresh_token": refresh, "name": name, "email": email}), 201
 
 
 @app.route("/login", methods=["POST"])
@@ -567,13 +604,24 @@ def login():
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
-    users = load_users()
-    user = users.get(email)
-    if not user or user["password"] != hash_pw(password):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+
+    if not row or not check_pw(password, row["password"]):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    token = create_access_token(identity=json.dumps({"email": email, "name": user["name"]}))
-    return jsonify({"token": token, "name": user["name"], "email": email})
+    identity = json.dumps({"email": email, "name": row["name"]})
+    token = create_access_token(identity=identity)
+    refresh = create_refresh_token(identity=identity)
+    return jsonify({"token": token, "refresh_token": refresh, "name": row["name"], "email": email})
+
+
+@app.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh_token():
+    identity = get_jwt_identity()
+    token = create_access_token(identity=identity)
+    return jsonify({"token": token})
 
 
 # ── Analyze route (protected) ─────────────────────────────────────────────────
@@ -631,27 +679,29 @@ def analyze():
     }
 
     # Save to history
-    users = load_users()
-    if email in users:
-        if "history" not in users[email]:
-            users[email]["history"] = []
-        history_entry = {
-            "id": str(uuid.uuid4()),
-            "filename": file.filename,
-            "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
-            "score": score,
-            "score_breakdown": score_breakdown,
-            "matched_skills": matched,
-            "missing_skills": missing,
-            "suggestions": suggestions,
-            "keyword_density": keyword_density,
-            "cover_letter": cover_letter,
-            "learning_resources": result["learning_resources"],
-            "project_recommendations": result["project_recommendations"],
-        }
-        users[email]["history"].insert(0, history_entry)
-        users[email]["history"] = users[email]["history"][:20]  # keep last 20
-        save_users(users)
+    with get_db() as conn:
+        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        if user_row:
+            entry_id = str(uuid.uuid4())
+            history_data = {
+                "id": entry_id,
+                "filename": file.filename,
+                "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+                **result
+            }
+            conn.execute(
+                "INSERT INTO history (id, user_id, filename, date, data) VALUES (?, ?, ?, ?, ?)",
+                (entry_id, user_row["id"], file.filename,
+                 history_data["date"], json.dumps(history_data))
+            )
+            # keep last 20 per user
+            old = conn.execute(
+                "SELECT id FROM history WHERE user_id = ? ORDER BY date DESC LIMIT -1 OFFSET 20",
+                (user_row["id"],)
+            ).fetchall()
+            for o in old:
+                conn.execute("DELETE FROM history WHERE id = ?", (o["id"],))
+            conn.commit()
 
     return jsonify(result)
 
@@ -661,9 +711,15 @@ def analyze():
 def get_history():
     identity = json.loads(get_jwt_identity())
     email = identity["email"]
-    users = load_users()
-    history = users.get(email, {}).get("history", [])
-    return jsonify({"history": history})
+    with get_db() as conn:
+        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        if not user_row:
+            return jsonify({"history": []})
+        rows = conn.execute(
+            "SELECT data FROM history WHERE user_id = ? ORDER BY date DESC",
+            (user_row["id"],)
+        ).fetchall()
+    return jsonify({"history": [json.loads(r["data"]) for r in rows]})
 
 
 @app.route("/history/<entry_id>", methods=["DELETE"])
@@ -671,10 +727,14 @@ def get_history():
 def delete_history_entry(entry_id):
     identity = json.loads(get_jwt_identity())
     email = identity["email"]
-    users = load_users()
-    if email in users and "history" in users[email]:
-        users[email]["history"] = [h for h in users[email]["history"] if h["id"] != entry_id]
-        save_users(users)
+    with get_db() as conn:
+        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        if user_row:
+            conn.execute(
+                "DELETE FROM history WHERE id = ? AND user_id = ?",
+                (entry_id, user_row["id"])
+            )
+            conn.commit()
     return jsonify({"ok": True})
 
 
