@@ -1,5 +1,5 @@
 import re, json, uuid, sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import fitz
 import docx
@@ -42,7 +42,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
+                username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL
             )
         """)
@@ -573,47 +573,51 @@ def build_learning_resources(missing_skills: list) -> list:
 def register():
     data = request.get_json()
     name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
+    username = (data.get("username") or "").strip().lower()
     password = data.get("password") or ""
 
-    if not name or not email or not password:
+    if not name or not username or not password:
         return jsonify({"error": "All fields are required"}), 400
+    if len(username) < 3:
+        return jsonify({"error": "Username must be at least 3 characters"}), 400
+    if not re.match(r'^[a-z0-9_]+$', username):
+        return jsonify({"error": "Username can only contain letters, numbers, and underscores"}), 400
     if len(password) < 6:
         return jsonify({"error": "Password must be at least 6 characters"}), 400
 
     user_id = str(uuid.uuid4())
-    identity = json.dumps({"email": email, "name": name})
+    identity = json.dumps({"username": username, "name": name})
     try:
         with get_db() as conn:
             conn.execute(
-                "INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)",
-                (user_id, name, email, hash_pw(password))
+                "INSERT INTO users (id, name, username, password) VALUES (?, ?, ?, ?)",
+                (user_id, name, username, hash_pw(password))
             )
             conn.commit()
     except sqlite3.IntegrityError:
-        return jsonify({"error": "Email already registered"}), 409
+        return jsonify({"error": "Username already taken"}), 409
 
     token = create_access_token(identity=identity)
     refresh = create_refresh_token(identity=identity)
-    return jsonify({"token": token, "refresh_token": refresh, "name": name, "email": email}), 201
+    return jsonify({"token": token, "refresh_token": refresh, "name": name, "username": username}), 201
 
 
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-    email = (data.get("email") or "").strip().lower()
+    username = (data.get("username") or "").strip().lower()
     password = data.get("password") or ""
 
     with get_db() as conn:
-        row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
 
     if not row or not check_pw(password, row["password"]):
-        return jsonify({"error": "Invalid email or password"}), 401
+        return jsonify({"error": "Invalid username or password"}), 401
 
-    identity = json.dumps({"email": email, "name": row["name"]})
+    identity = json.dumps({"username": username, "name": row["name"]})
     token = create_access_token(identity=identity)
     refresh = create_refresh_token(identity=identity)
-    return jsonify({"token": token, "refresh_token": refresh, "name": row["name"], "email": email})
+    return jsonify({"token": token, "refresh_token": refresh, "name": row["name"], "username": username})
 
 
 @app.route("/refresh", methods=["POST"])
@@ -634,7 +638,7 @@ def analyze():
         return jsonify({"error": "No job description provided"}), 400
 
     identity = json.loads(get_jwt_identity())
-    email = identity["email"]
+    username = identity["username"]
     name = identity["name"]
 
     file = request.files["resume"]
@@ -680,19 +684,20 @@ def analyze():
 
     # Save to history
     with get_db() as conn:
-        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        user_row = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if user_row:
             entry_id = str(uuid.uuid4())
             history_data = {
                 "id": entry_id,
                 "filename": file.filename,
-                "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
                 **result
             }
             conn.execute(
                 "INSERT INTO history (id, user_id, filename, date, data) VALUES (?, ?, ?, ?, ?)",
                 (entry_id, user_row["id"], file.filename,
                  history_data["date"], json.dumps(history_data))
+
             )
             # keep last 20 per user
             old = conn.execute(
@@ -710,9 +715,9 @@ def analyze():
 @jwt_required()
 def get_history():
     identity = json.loads(get_jwt_identity())
-    email = identity["email"]
+    username = identity["username"]
     with get_db() as conn:
-        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        user_row = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if not user_row:
             return jsonify({"history": []})
         rows = conn.execute(
@@ -726,9 +731,9 @@ def get_history():
 @jwt_required()
 def delete_history_entry(entry_id):
     identity = json.loads(get_jwt_identity())
-    email = identity["email"]
+    username = identity["username"]
     with get_db() as conn:
-        user_row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        user_row = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if user_row:
             conn.execute(
                 "DELETE FROM history WHERE id = ? AND user_id = ?",
@@ -759,7 +764,8 @@ def compare():
                 resume_raw = extract_text_docx(file)
             else:
                 continue
-        except Exception:
+        except Exception as e:
+            app.logger.warning("Failed to parse %s: %s", file.filename, e)
             continue
 
         resume_clean = clean(resume_raw)
@@ -782,10 +788,84 @@ def compare():
     return jsonify({"results": results})
 
 
+@app.route("/analyze-resume", methods=["POST"])
+@jwt_required()
+def analyze_resume_only():
+    if "resume" not in request.files:
+        return jsonify({"error": "No resume file provided"}), 400
+
+    identity = json.loads(get_jwt_identity())
+    name = identity["name"]
+
+    file = request.files["resume"]
+    filename = file.filename.lower()
+
+    try:
+        if filename.endswith(".pdf"):
+            resume_raw = extract_text_pdf(file)
+        elif filename.endswith(".docx"):
+            resume_raw = extract_text_docx(file)
+        else:
+            return jsonify({"error": "Unsupported file type. Upload PDF or DOCX."}), 400
+    except Exception as e:
+        return jsonify({"error": f"Failed to parse file: {str(e)}"}), 500
+
+    resume_skills = extract_skills(resume_raw)
+    word_count = len(resume_raw.split())
+
+    # Section scores against own skills
+    score_breakdown = compute_score_breakdown(resume_raw, resume_skills)
+
+    # Strength score: based on word count, skill count, section presence
+    has_experience = bool(extract_section(resume_raw, ["experience", "work experience", "employment"]))
+    has_education = bool(extract_section(resume_raw, ["education", "academic"]))
+    has_skills = bool(extract_section(resume_raw, ["skills", "technical skills"]))
+    has_projects = bool(extract_section(resume_raw, ["projects"]))
+
+    section_score = sum([has_experience, has_education, has_skills, has_projects]) * 15
+    skill_score = min(len(resume_skills) * 3, 40)
+    wc_score = 10 if 200 <= word_count <= 800 else 5
+    overall = min(section_score + skill_score + wc_score, 100)
+
+    suggestions = []
+    if not has_experience:
+        suggestions.append("Add a clear Work Experience section with job titles, companies, and dates.")
+    if not has_education:
+        suggestions.append("Add an Education section with your degree, institution, and graduation year.")
+    if not has_skills:
+        suggestions.append("Add a dedicated Skills section listing your technical and soft skills.")
+    if not has_projects:
+        suggestions.append("Add a Projects section to showcase practical work and side projects.")
+    if word_count < 200:
+        suggestions.append(f"Resume is too short ({word_count} words). Add more detail about your experience.")
+    if word_count > 800:
+        suggestions.append(f"Resume is quite long ({word_count} words). Try to keep it concise — ideally under 600 words.")
+    if len(resume_skills) < 5:
+        suggestions.append("Very few recognizable skills detected. Make sure to list your technical skills explicitly.")
+    if not suggestions:
+        suggestions.append("Your resume looks well-structured. Tailor it to each job description for best results.")
+
+    return jsonify({
+        "score": overall,
+        "score_breakdown": score_breakdown,
+        "detected_skills": resume_skills,
+        "suggestions": suggestions,
+        "word_count": word_count,
+        "sections_found": {
+            "experience": has_experience,
+            "education": has_education,
+            "skills": has_skills,
+            "projects": has_projects,
+        },
+        "learning_resources": build_learning_resources(resume_skills[:6]),
+        "project_recommendations": build_project_recommendations([], resume_skills),
+    })
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", port=5000)

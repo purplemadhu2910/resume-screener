@@ -9,23 +9,23 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token')
     const refreshToken = localStorage.getItem('refresh_token')
     const name = localStorage.getItem('name')
-    const email = localStorage.getItem('email')
-    return token ? { token, refreshToken, name, email } : null
+    const username = localStorage.getItem('username')
+    return token ? { token, refreshToken, name, username } : null
   })
 
-  const login = ({ token, refresh_token, name, email }) => {
+  const login = ({ token, refresh_token, name, username }) => {
     localStorage.setItem('token', token)
     localStorage.setItem('refresh_token', refresh_token)
     localStorage.setItem('name', name)
-    localStorage.setItem('email', email)
-    setUser({ token, refreshToken: refresh_token, name, email })
+    localStorage.setItem('username', username)
+    setUser({ token, refreshToken: refresh_token, name, username })
   }
 
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('name')
-    localStorage.removeItem('email')
+    localStorage.removeItem('username')
     setUser(null)
   }
 

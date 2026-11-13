@@ -1,44 +1,24 @@
 import { useEffect, useState } from 'react'
 
-function MiniRing({ label, score }) {
+function Bar({ label, score }) {
   const [animated, setAnimated] = useState(0)
-  const radius = 30
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (animated / 100) * circumference
+  useEffect(() => { const t = setTimeout(() => setAnimated(score), 150); return () => clearTimeout(t) }, [score])
 
-  const color =
-    score >= 70 ? 'stroke-emerald-400' :
-    score >= 45 ? 'stroke-amber-400' :
-    'stroke-red-400'
-
-  const textColor =
-    score >= 70 ? 'text-emerald-400' :
-    score >= 45 ? 'text-amber-400' :
-    'text-red-400'
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(score), 150)
-    return () => clearTimeout(t)
-  }, [score])
+  const color = score >= 70 ? 'bg-emerald-500' : score >= 45 ? 'bg-amber-400' : 'bg-red-400'
+  const text = score >= 70 ? 'text-emerald-600' : score >= 45 ? 'text-amber-600' : 'text-red-500'
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-20 h-20">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 72 72">
-          <circle cx="36" cy="36" r={radius} fill="none" stroke="currentColor" strokeWidth="6" className="text-white/10" />
-          <circle
-            cx="36" cy="36" r={radius} fill="none"
-            strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className={`${color} transition-all duration-1000 ease-out`}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`text-sm font-bold ${textColor}`}>{score}%</span>
-        </div>
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600 font-medium capitalize">{label}</span>
+        <span className={`font-bold ${text}`}>{score}%</span>
       </div>
-      <span className="text-xs text-slate-400 font-medium capitalize">{label}</span>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ease-out ${color}`}
+          style={{ width: `${animated}%` }}
+        />
+      </div>
     </div>
   )
 }
@@ -46,14 +26,11 @@ function MiniRing({ label, score }) {
 export default function ScoreBreakdown({ breakdown }) {
   if (!breakdown) return null
   return (
-    <div className="glass rounded-2xl p-6 space-y-4">
-      <h3 className="font-semibold text-slate-200 text-sm">Score Breakdown</h3>
-      <p className="text-xs text-slate-500">How well your resume covers JD skills across each section.</p>
-      <div className="flex justify-around">
-        <MiniRing label="Skills Section" score={breakdown.skills} />
-        <MiniRing label="Experience" score={breakdown.experience} />
-        <MiniRing label="Education" score={breakdown.education} />
-      </div>
+    <div className="space-y-4">
+      <p className="text-xs text-gray-400">How well your resume covers JD skills across each section.</p>
+      <Bar label="Skills Section" score={breakdown.skills} />
+      <Bar label="Experience" score={breakdown.experience} />
+      <Bar label="Education" score={breakdown.education} />
     </div>
   )
 }

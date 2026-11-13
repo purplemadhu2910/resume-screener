@@ -5,12 +5,64 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased;
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  }
+  body.dark {
+    @apply bg-gray-950 text-gray-100;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  /* Cards */
+  .card {
+    @apply bg-white border border-gray-200 rounded-2xl shadow-sm;
+  }
+  .dark .card {
+    @apply bg-gray-900 border-gray-800;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl px-5 py-2.5 transition-colors;
+  }
+  .btn-ghost {
+    @apply bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 font-medium rounded-xl px-4 py-2 transition-colors;
+  }
+  .dark .btn-ghost {
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all;
+  }
+  .dark .input {
+    @apply bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:ring-indigo-900;
+  }
+
+  /* Badges */
+  .badge-green {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+  .dark .badge-green {
+    @apply bg-emerald-900/30 text-emerald-400 border-emerald-800;
+  }
+  .badge-red {
+    @apply bg-red-50 text-red-700 border border-red-200 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+  .dark .badge-red {
+    @apply bg-red-900/30 text-red-400 border-red-800;
+  }
+  .badge-blue {
+    @apply bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+  .dark .badge-blue {
+    @apply bg-blue-900/30 text-blue-400 border-blue-800;
+  }
+  .badge-gray {
+    @apply bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+  .dark .badge-gray {
+    @apply bg-gray-800 text-gray-400;
   }
 }
