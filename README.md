@@ -2,7 +2,7 @@
 
 AI-powered resume vs job description compatibility analyzer using TF-IDF + Cosine Similarity.
 
-*##Link: http://localhost:5173](https://resume-screener-9vs4.onrender.com*
+*Link: https://resume-screener-9vs4.onrender.com*
 ## Folder Structure
 
 ```
